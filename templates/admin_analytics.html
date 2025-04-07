@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Farmer's Market{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC9zwtLRgX6vCvR8K16AzqlHq70H-VhAfM&libraries=places"></script>
+    <style>
+        #google_translate_element select {
+            background-color: #f8f9fa;
+            border: 1px solid #ced4da;
+            border-radius: 0.25rem;
+            padding: 1rem 0.75rem;
+            font-size: 1rem;
+            color: #495057;
+            max-width: 200px;
+        }
+        .goog-te-gadget-simple{
+            margin:0rem 1rem;
+            border-radius: 7px;
+        }  
+        .navbar-brand{
+            text-align: center;
+        }
+        .navbar-brand span{
+            font-size: 2vh;
+        }
+    </style>
+</head>
+<body>
+    {% block content %}
+    {% if user.is_authenticated and user.is_staff %}
+    <div class="container mt-4">
+        <!-- Admin Navigation Bar -->
+        <div class="card mb-4 admin-card">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">Admin Analytics Dashboard</h2>
+                <div class="d-flex align-items-center">
+                    <a href="{% url 'admin:index' %}" class="btn btn-outline-success me-2">
+                        <i class="fas fa-cog"></i> Admin Panel
+                    </a>
+                    <form method="post" action="{% url 'logout' %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- News Management Section -->
+        <div class="card mb-4 admin-card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-newspaper me-2"></i>
+                    News Management
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{% url 'add_news' %}" class="mb-4">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="title">News Title</label>
+                                <input type="text" class="form-control" id="title" name="title" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="expiry_days">Show For (Days)</label>
+                                <input type="number" class="form-control" id="expiry_days" name="expiry_days" min="1" value="7">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group mt-3">
+                        <label for="content">News Content</label>
+                        <textarea class="form-control" id="content" name="content" rows="3" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success mt-3">
+                        <i class="fas fa-plus me-2"></i>Add News
+                    </button>
+                </form>
+
+                <h6 class="mt-4 mb-3">
+                    <i class="fas fa-list me-2"></i>
+                    Active News Items
+                </h6>
+                <div class="table-responsive">
+                    <table class="table admin-table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Content</th>
+                                <th>Created</th>
+                                <th>Expires</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for news in news_items %}
+                            <tr>
+                                <td>{{ news.title }}</td>
+                                <td>{{ news.content|truncatechars:50 }}</td>
+                                <td>{{ news.created_at|date:"M d, Y" }}</td>
+                                <td>{{ news.expiry_date|date:"M d, Y" }}</td>
+                                <td>
+                                    <form method="POST" action="{% url 'delete_news' news.id %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger btn-sm">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center">No active news items</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card admin-card">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-success">
+                            <i class="fas fa-users mb-2"></i><br>
+                            Total Buyers
+                        </h5>
+                        <h2 class="card-text admin-stat">{{ total_buyers }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card admin-card">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-success">
+                            <i class="fas fa-box mb-2"></i><br>
+                            Total Products
+                        </h5>
+                        <h2 class="card-text admin-stat">{{ total_products }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card admin-card">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-success">
+                            <i class="fas fa-map-marker-alt mb-2"></i><br>
+                            Total Regions
+                        </h5>
+                        <h2 class="card-text admin-stat">{{ total_regions }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Analysis -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card admin-card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-chart-pie me-2"></i>
+                            Products by Region
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Region</th>
+                                        <th>Product Count</th>
+                                        <th>Total Quantity (kg)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for region in products_by_region %}
+                                    <tr>
+                                        <td>{{ region.region }}</td>
+                                        <td>{{ region.count }}</td>
+                                        <td>{{ region.total_quantity }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card admin-card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-star me-2"></i>
+                            Most Requested Products
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Total Requests</th>
+                                        <th>Total Quantity (kg)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for product in product_requests %}
+                                    <tr>
+                                        <td>{{ product.product_name }}</td>
+                                        <td>{{ product.request_count }}</td>
+                                        <td>{{ product.total_quantity }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buyer Analysis -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card admin-card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-users me-2"></i>
+                            Buyers by Region
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Region</th>
+                                        <th>Number of Buyers</th>
+                                        <th>Total Requests</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for region in buyers_by_region %}
+                                    <tr>
+                                        <td>{{ region.region }}</td>
+                                        <td>{{ region.buyer_count }}</td>
+                                        <td>{{ region.request_count }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="container mt-4">
+        <div class="alert alert-danger">
+            <h4 class="alert-heading">Access Denied</h4>
+            <p>You do not have permission to access this page. Please log in as an administrator.</p>
+            <hr>
+            <p class="mb-0">
+                <a href="{% url 'login' %}" class="btn btn-primary">Login</a>
+                <a href="{% url 'index' %}" class="btn btn-secondary">Go to Homepage</a>
+            </p>
+        </div>
+    </div>
+    {% endif %}
+    {% endblock %}
+
+    {% block extra_js %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add smooth transitions for cards
+        const cards = document.querySelectorAll('.admin-card');
+        cards.forEach(card => {
+            card.addEventListener('mouseover', function() {
+                this.style.transition = 'transform 0.3s ease';
+            });
+        });
+    });
+    </script>
+    {% endblock %}
+</body>
+</html>

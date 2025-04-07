@@ -1,0 +1,543 @@
+{% extends 'base.html' %}
+
+{% block title %}Farmer Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">{{ farmer.farm_name }}</h5>
+                    <div class="list-group mt-3">
+                        <a href="#profile" class="list-group-item list-group-item-action active" data-bs-toggle="list">
+                            Profile
+                        </a>
+                        <a href="#products" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                            Products
+                        </a>
+                        <a href="#interests" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                            Interests
+                        </a>
+                        <a href="#account" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                            Account Settings
+                        </a>
+                        <a href="#reviews" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                            Reviews
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <div class="tab-content">
+                <!-- Profile Section -->
+                <div class="tab-pane fade show active" id="profile">
+                    <div class="card">
+                        <div class="card-body">
+                            <h4 class="card-title mb-4">Farm Profile</h4>
+                            <form method="post" action="{% url 'update_profile' %}" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <label class="form-label">Farm Name</label>
+                                    <input type="text" class="form-control" name="farm_name" value="{{ farmer.farm_name }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Description</label>
+                                    <textarea class="form-control" name="farm_description" rows="3">{{ farmer.farm_description }}</textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Location</label>
+                                    <input type="text" 
+                                           id="locationInput" 
+                                           class="form-control" 
+                                           name="farm_location" 
+                                           value="{{ farmer.farm_location }}">
+                                    <input type="hidden" name="latitude" id="latitude" value="{{ farmer.latitude|default:'' }}">
+                                    <input type="hidden" name="longitude" id="longitude" value="{{ farmer.longitude|default:'' }}">
+                                </div>
+                                <div class="mb-3">
+                                    <div id="locationMap" style="height: 300px; width: 100%;"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Farm Image</label>
+                                    <input type="file" class="form-control" name="farm_image">
+                                </div>
+                                <button type="submit" class="btn btn-success">Update Profile</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products Section -->
+                <div class="tab-pane fade" id="products">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h4 class="card-title mb-0">My Products</h4>
+                                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                                    Add Product
+                                </button>
+                            </div>
+
+                            <div class="row">
+                                {% for product in farmer.product_set.all %}
+                                    <div class="col-md-4 mb-4">
+                                        <div class="card h-100">
+                                            {% if product.image %}
+                                                <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                                            {% endif %}
+                                            <div class="card-body">
+                                                <h5 class="card-title">{{ product.name }}</h5>
+                                                <p class="card-text">{{ product.description }}</p>
+                                                <p class="card-text">
+                                                    <strong>Price:</strong> Rs. {{ product.price }}<br>
+                                                    <strong>Quantity:</strong> {{ product.quantity }} kg
+                                                </p>
+                                                <div class="btn-group">
+                                                    <button class="btn btn-outline-success btn-sm" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#editProductModal{{ product.id }}">
+                                                        Edit
+                                                    </button>
+                                                    <button class="btn btn-outline-danger btn-sm" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#deleteProductModal{{ product.id }}">
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% empty %}
+                                    <div class="col-12 text-center">
+                                        <p>No products added yet.</p>
+                                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                                            Add Your First Product
+                                        </button>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interests Section -->
+                <div class="tab-pane fade" id="interests">
+                    <div class="card">
+                        <div class="card-body">
+                            <h4 class="card-title mb-4">Product Interests</h4>
+                            
+                            {% regroup interests by product as product_interests %}
+                            
+                            {% for product_group in product_interests %}
+                                <div class="product-interest-group mb-4">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-3">
+                                            {{ product_group.grouper.name }}
+                                            <span class="badge bg-success ms-2">{{ product_group.list|length }} interests</span>
+                                        </h5>
+                                        <button class="btn btn-sm btn-outline-success" 
+                                                onclick="sendSMSToAllInterested('{{ product_group.grouper.id }}')">
+                                            Send SMS to All
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Buyer</th>
+                                                    <th>Contact</th>
+                                                    <th>Location</th>
+                                                    <th>Message</th>
+                                                    <th>Date</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for interest in product_group.list %}
+                                                    <tr>
+                                                        <td>{{ interest.user.user.username }}</td>
+                                                        <td>
+                                                            <i class="fas fa-phone text-success"></i> {{ interest.user.phone }}<br>
+                                                            <small><i class="fas fa-envelope text-success"></i> {{ interest.user.user.email }}</small>
+                                                        </td>
+                                                        <td>{{ interest.user.city }}</td>
+                                                        <td>{{ interest.message|truncatechars:50 }}</td>
+                                                        <td>{{ interest.created_at|date:"M d, Y" }}</td>
+                                                        <td>
+                                                            <a href="tel:{{ interest.user.phone }}" class="btn btn-sm btn-success">
+                                                                <i class="fas fa-phone"></i> Call
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                {% if not forloop.last %}
+                                    <hr class="my-4">
+                                {% endif %}
+                            {% empty %}
+                                <div class="text-center">
+                                    <p class="text-muted">No interests received for any products yet.</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account Settings Section -->
+                <div class="tab-pane fade" id="account">
+                    <div class="card">
+                        <div class="card-body">
+                            <h4 class="card-title mb-4">Account Settings</h4>
+                            
+                            <!-- Change Username -->
+                            <div class="mb-4">
+                                <h5>Change Username</h5>
+                                <form method="post" action="{% url 'change_username' %}">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <label class="form-label">New Username</label>
+                                        <input type="text" class="form-control" name="new_username" value="{{ user.username }}">
+                                    </div>
+                                    <button type="submit" class="btn btn-success">Update Username</button>
+                                </form>
+                            </div>
+                            
+                            <hr>
+                            
+                            <!-- Change Password -->
+                            <div class="mt-4">
+                                <h5>Change Password</h5>
+                                <form method="post" action="{% url 'change_password' %}">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <label class="form-label">Current Password</label>
+                                        <input type="password" class="form-control" name="old_password">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">New Password</label>
+                                        <input type="password" class="form-control" name="new_password1">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Confirm New Password</label>
+                                        <input type="password" class="form-control" name="new_password2">
+                                    </div>
+                                    <button type="submit" class="btn btn-success">Change Password</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reviews Section -->
+                <div class="tab-pane fade" id="reviews">
+                    <div class="card">
+                        <div class="card-body">
+                            <h4 class="card-title mb-4">Customer Reviews</h4>
+                            <div class="d-flex align-items-center mb-4">
+                                <div class="h3 mb-0 me-2">{{ farmer.average_rating|floatformat:1 }}</div>
+                                <div class="star-rating">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= farmer.average_rating %}
+                                            <i class="fas fa-star text-warning"></i>
+                                        {% elif forloop.counter <= farmer.average_rating|add:0.5 %}
+                                            <i class="fas fa-star-half-alt text-warning"></i>
+                                        {% else %}
+                                            <i class="far fa-star text-warning"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <span class="text-muted ms-2">({{ farmer.ratings.count }} reviews)</span>
+                            </div>
+
+                            {% for rating in farmer.ratings.all %}
+                                <div class="review-card mb-4 border-bottom pb-3">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong>{{ rating.user.user.username }}</strong>
+                                            <div class="star-rating small">
+                                                {% for i in "12345" %}
+                                                    {% if forloop.counter <= rating.rating %}
+                                                        <i class="fas fa-star text-warning"></i>
+                                                    {% else %}
+                                                        <i class="far fa-star text-warning"></i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">{{ rating.created_at|date:"M d, Y" }}</small>
+                                    </div>
+                                    {% if rating.comment %}
+                                        <p class="mt-2 mb-3">{{ rating.comment }}</p>
+                                    {% endif %}
+
+                                    <!-- Replies -->
+                                    {% for reply in rating.replies.all %}
+                                        <div class="farmer-reply ms-4 mt-2 p-3 bg-light rounded">
+                                            <div class="d-flex justify-content-between">
+                                                <strong class="text-success">Your Reply</strong>
+                                                <small class="text-muted">{{ reply.created_at|date:"M d, Y" }}</small>
+                                            </div>
+                                            <p class="mb-0 mt-2">{{ reply.reply_text }}</p>
+                                        </div>
+                                    {% endfor %}
+
+                                    <!-- Reply Form -->
+                                    {% if not rating.replies.exists %}
+                                        <button class="btn btn-outline-success btn-sm mt-2" 
+                                                data-bs-toggle="collapse" 
+                                                data-bs-target="#replyForm{{ rating.id }}">
+                                            Reply to Review
+                                        </button>
+                                        <div class="collapse mt-2" id="replyForm{{ rating.id }}">
+                                            <form action="{% url 'reply_to_rating' rating.id %}" method="post">
+                                                {% csrf_token %}
+                                                <div class="form-group">
+                                                    <textarea class="form-control" 
+                                                              name="reply_text" 
+                                                              rows="3" 
+                                                              placeholder="Write your reply..."></textarea>
+                                                </div>
+                                                <button type="submit" class="btn btn-success btn-sm mt-2">
+                                                    Post Reply
+                                                </button>
+                                            </form>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% empty %}
+                                <p class="text-center">No reviews yet.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Product Modal -->
+<div class="modal fade" id="addProductModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Product</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'add_product' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Product Name</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Price (Rs.)</label>
+                        <input type="number" class="form-control" name="price" step="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quantity (kg)</label>
+                        <input type="number" class="form-control" name="quantity" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Image</label>
+                        <input type="file" class="form-control" name="image" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-success">Add Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Move all modals outside the main content area, at the end of the page before closing body tag -->
+{% for product in farmer.product_set.all %}
+    <!-- Edit Product Modal -->
+    <div class="modal fade edit-product-modal" id="editProductModal{{ product.id }}" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Product</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" 
+                      action="{% url 'edit_product' product.id %}" 
+                      enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Product Name</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="name" 
+                                   value="{{ product.name }}" 
+                                   required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" 
+                                      name="description" 
+                                      rows="3" 
+                                      required>{{ product.description }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Price (Rs.)</label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   name="price" 
+                                   value="{{ product.price }}" 
+                                   step="0.01" 
+                                   required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Quantity (kg)</label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   name="quantity" 
+                                   value="{{ product.quantity }}" 
+                                   required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Image</label>
+                            <input type="file" class="form-control" name="image">
+                            <small class="text-muted">Leave empty to keep current image</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-success">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Product Modal -->
+    <div class="modal fade delete-product-modal" id="deleteProductModal{{ product.id }}" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Product</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete "{{ product.name }}"?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form method="post" action="{% url 'delete_product' product.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endfor %}
+
+<!-- Add this JavaScript at the bottom of the page -->
+{% block extra_js %}
+{{ block.super }}
+<script>
+let map;
+let marker;
+let autocomplete;
+
+function initMap() {
+    const defaultLocation = { 
+        lat: {{ farmer.latitude|default:"23.0225" }}, 
+        lng: {{ farmer.longitude|default:"72.5714" }} 
+    };
+
+    map = new google.maps.Map(document.getElementById("locationMap"), {
+        center: defaultLocation,
+        zoom: 15,
+    });
+
+    marker = new google.maps.Marker({
+        position: defaultLocation,
+        map: map,
+        draggable: true
+    });
+
+    // Initialize autocomplete
+    autocomplete = new google.maps.places.Autocomplete(
+        document.getElementById('locationInput'),
+        { types: ['geocode'] }
+    );
+
+    // Update marker when place is selected
+    autocomplete.addListener('place_changed', function() {
+        const place = autocomplete.getPlace();
+        if (!place.geometry) return;
+
+        map.setCenter(place.geometry.location);
+        marker.setPosition(place.geometry.location);
+        updateCoordinates(place.geometry.location);
+    });
+
+    // Update coordinates when marker is dragged
+    marker.addListener('dragend', function() {
+        const position = marker.getPosition();
+        updateCoordinates(position);
+        reverseGeocode(position);
+    });
+}
+
+function updateCoordinates(location) {
+    document.getElementById('latitude').value = location.lat();
+    document.getElementById('longitude').value = location.lng();
+}
+
+function reverseGeocode(location) {
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ location: location }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+            document.getElementById('locationInput').value = results[0].formatted_address;
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', initMap);
+
+function sendSMSToAllInterested(productId) {
+    // Fetch the phone numbers and message from the server
+    fetch(`/send-sms/${productId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Create an SMS link
+            const phoneNumbers = data.phoneNumbers.join(','); // Assuming data.phoneNumbers is an array of phone numbers
+            const message = encodeURIComponent('Update about your interest in our products.');
+            const smsLink = `sms:${phoneNumbers}?body=${message}`;
+            
+            // Open the SMS app
+            window.location.href = smsLink;
+        } else {
+            alert('Error sending SMS. Please try again.');
+        }
+    });
+}
+</script>
+{% endblock %}
+{% endblock %} 

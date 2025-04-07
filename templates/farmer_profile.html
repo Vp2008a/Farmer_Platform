@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ farmer.farm_name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <!-- Farmer Info -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                {% if farmer.farm_image %}
+                    <img src="{{ farmer.farm_image.url }}" class="card-img-top" alt="{{ farmer.farm_name }}">
+                {% endif %}
+                <div class="card-body">
+                    <h3 class="card-title">{{ farmer.farm_name }}</h3>
+                    <p class="card-text">{{ farmer.farm_description }}</p>
+                    <p class="card-text">
+                        <i class="fas fa-map-marker-alt text-success"></i> {{ farmer.farm_location }}
+                    </p>
+                    <p class="card-text">
+                        <i class="fas fa-phone text-success"></i> {{ farmer.user_profile.phone }}
+                    </p>
+                    <p class="card-text">
+                        <i class="fas fa-city text-success"></i> {{ farmer.user_profile.city }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Add this after the farmer info card -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h4 class="card-title">Rating</h4>
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="h2 mb-0 me-2">{{ farmer.average_rating|floatformat:1 }}</div>
+                        <div class="star-rating">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= farmer.average_rating %}
+                                    <i class="fas fa-star text-warning"></i>
+                                {% elif forloop.counter <= farmer.average_rating|add:0.5 %}
+                                    <i class="fas fa-star-half-alt text-warning"></i>
+                                {% else %}
+                                    <i class="far fa-star text-warning"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <small class="text-muted ms-2">({{ farmer.ratings.count }} ratings)</small>
+                    </div>
+
+                    {% if user.is_authenticated and not user.userprofile.is_farmer %}
+                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#ratingModal">
+                            Rate this Farmer
+                        </button>
+                    {% endif %}
+
+                    <!-- Recent Reviews -->
+                    <div class="mt-4">
+                        <h5>Reviews</h5>
+                        {% for rating in ratings %}
+                            <div class="border-bottom py-3">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong>{{ rating.user.user.username }}</strong>
+                                        <div class="star-rating">
+                                            {% for i in "12345" %}
+                                                {% if forloop.counter <= rating.rating %}
+                                                    <i class="fas fa-star text-warning"></i>
+                                                {% else %}
+                                                    <i class="far fa-star text-warning"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">{{ rating.created_at|date:"M d, Y" }}</small>
+                                </div>
+                                {% if rating.comment %}
+                                    <p class="mb-2 mt-1">{{ rating.comment }}</p>
+                                {% endif %}
+
+                                <!-- Show Farmer's Reply -->
+                                {% for reply in rating.replies.all %}
+                                    <div class="farmer-reply ms-4 mt-2 p-3 bg-light rounded">
+                                        <div class="d-flex justify-content-between">
+                                            <strong class="text-success">Farmer's Reply</strong>
+                                            <small class="text-muted">{{ reply.created_at|date:"M d, Y" }}</small>
+                                        </div>
+                                        <p class="mb-0 mt-2">{{ reply.reply_text }}</p>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% empty %}
+                            <p class="text-muted">No reviews yet.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add this after the farmer info card -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h4 class="card-title">Farm Location</h4>
+                    <div id="map" style="height: 400px; width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products -->
+        <div class="col-md-8">
+            <h3 class="mb-4">Available Products</h3>
+            <div class="row">
+                {% for product in products %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            {% if product.image %}
+                                <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                            {% endif %}
+                            <div class="card-body">
+                                <h5 class="card-title">{{ product.name }}</h5>
+                                <p class="card-text">{{ product.description }}</p>
+                                <p class="card-text">
+                                    <strong>Price:</strong> Rs. {{ product.price }}<br>
+                                    <strong>Quantity:</strong> {{ product.quantity }} kg
+                                </p>
+                                {% if user.is_authenticated and not user.userprofile.is_farmer %}
+                                    <button type="button" 
+                                            class="btn btn-success" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#interestModal{{ product.id }}">
+                                        <i class="fas fa-heart"></i> Show Interest
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Interest Modal -->
+                    {% if user.is_authenticated and not user.userprofile.is_farmer %}
+                        <div class="modal fade" id="interestModal{{ product.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Show Interest in {{ product.name }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form action="{% url 'show_interest' product.id %}" method="post">
+                                        {% csrf_token %}
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label for="message" class="form-label">Message to Farmer</label>
+                                                <textarea class="form-control" 
+                                                          name="message" 
+                                                          rows="3" 
+                                                          placeholder="Tell the farmer about your interest in this product"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            <button type="submit" class="btn btn-success">Send Interest</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% empty %}
+                    <div class="col-12">
+                        <p class="text-center">No products available at the moment.</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rating Modal -->
+{% if user.is_authenticated and not user.userprofile.is_farmer %}
+    <div class="modal fade" id="ratingModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Rate {{ farmer.farm_name }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="{% url 'rate_farmer' farmer.id %}" method="post">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Your Rating</label>
+                            <div class="star-rating-input">
+                                <input type="radio" name="rating" value="5" id="star5" {% if user_rating.rating == 5 %}checked{% endif %}>
+                                <label for="star5"><i class="far fa-star"></i></label>
+                                
+                                <input type="radio" name="rating" value="4" id="star4" {% if user_rating.rating == 4 %}checked{% endif %}>
+                                <label for="star4"><i class="far fa-star"></i></label>
+                                
+                                <input type="radio" name="rating" value="3" id="star3" {% if user_rating.rating == 3 %}checked{% endif %}>
+                                <label for="star3"><i class="far fa-star"></i></label>
+                                
+                                <input type="radio" name="rating" value="2" id="star2" {% if user_rating.rating == 2 %}checked{% endif %}>
+                                <label for="star2"><i class="far fa-star"></i></label>
+                                
+                                <input type="radio" name="rating" value="1" id="star1" {% if user_rating.rating == 1 %}checked{% endif %}>
+                                <label for="star1"><i class="far fa-star"></i></label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Review (Optional)</label>
+                            <textarea class="form-control" 
+                                      name="comment" 
+                                      rows="3" 
+                                      placeholder="Share your experience with this farmer">{{ user_rating.comment }}</textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-success">Submit Rating</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Add this at the bottom of the page -->
+{% block extra_js %}
+<script>
+let map;
+let marker;
+
+function initMap() {
+    const farmLocation = { 
+        lat: {{ farmer.latitude|default:"23.0225" }}, 
+        lng: {{ farmer.longitude|default:"72.5714" }} 
+    };
+
+    map = new google.maps.Map(document.getElementById("map"), {
+        center: farmLocation,
+        zoom: 15,
+    });
+
+    marker = new google.maps.Marker({
+        position: farmLocation,
+        map: map,
+        title: "{{ farmer.farm_name }}"
+    });
+
+    // Add info window
+    const infoWindow = new google.maps.InfoWindow({
+        content: `
+            <div>
+                <h5>${marker.getTitle()}</h5>
+                <p>{{ farmer.farm_location }}</p>
+            </div>
+        `
+    });
+
+    marker.addListener("click", () => {
+        infoWindow.open(map, marker);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', initMap);
+</script>
+{% endblock %}
+{% endblock %} 

@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}Nearby Farms{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h2>Farms Near You</h2>
+        </div>
+        <div class="col-md-6">
+            <form class="d-flex" id="radiusForm">
+                <input type="hidden" name="lat" id="userLat" value="{{ user_lat }}">
+                <input type="hidden" name="lng" id="userLng" value="{{ user_lng }}">
+                <select class="form-select me-2" name="radius" onchange="this.form.submit()">
+                    <option value="5" {% if radius == 5 %}selected{% endif %}>Within 5 km</option>
+                    <option value="10" {% if radius == 10 %}selected{% endif %}>Within 10 km</option>
+                    <option value="20" {% if radius == 20 %}selected{% endif %}>Within 20 km</option>
+                    <option value="50" {% if radius == 50 %}selected{% endif %}>Within 50 km</option>
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="row">
+                {% for farm in farms %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            {% if farm.farm_image %}
+                                <img src="{{ farm.farm_image.url }}" class="card-img-top" alt="{{ farm.farm_name }}">
+                            {% endif %}
+                            <div class="card-body">
+                                <h5 class="card-title">{{ farm.farm_name }}</h5>
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="star-rating small">
+                                        {% for i in "12345" %}
+                                            {% if forloop.counter <= farm.average_rating %}
+                                                <i class="fas fa-star text-warning"></i>
+                                            {% elif forloop.counter <= farm.average_rating|add:0.5 %}
+                                                <i class="fas fa-star-half-alt text-warning"></i>
+                                            {% else %}
+                                                <i class="far fa-star text-warning"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <small class="text-muted ms-2">({{ farm.ratings.count }})</small>
+                                </div>
+                                <p class="card-text">{{ farm.farm_description|truncatewords:30 }}</p>
+                                <p class="card-text">
+                                    <i class="fas fa-map-marker-alt text-success"></i> {{ farm.farm_location }}<br>
+                                    <strong class="text-success">{{ farm.distance }} km away</strong>
+                                </p>
+                                <a href="{% url 'farmer_profile' farm.id %}" class="btn btn-success">View Farm</a>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            No farms found within {{ radius }} km of your location.
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Area Map</h5>
+                    <div id="map" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+let map;
+let markers = [];
+let userMarker;
+
+function initMap() {
+    const userLocation = { 
+        lat: parseFloat({{ user_lat }}), 
+        lng: parseFloat({{ user_lng }}) 
+    };
+
+    map = new google.maps.Map(document.getElementById("map"), {
+        center: userLocation,
+        zoom: 11,
+    });
+
+    // Add user marker
+    userMarker = new google.maps.Marker({
+        position: userLocation,
+        map: map,
+        icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: "#4285F4",
+            fillOpacity: 1,
+            strokeWeight: 2,
+            strokeColor: "#FFFFFF",
+        },
+        title: "Your Location"
+    });
+
+    // Draw radius circle
+    new google.maps.Circle({
+        strokeColor: "#4285F4",
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: "#4285F4",
+        fillOpacity: 0.1,
+        map: map,
+        center: userLocation,
+        radius: {{ radius }} * 1000  // Convert km to meters
+    });
+
+    // Add farm markers
+    {% for farm in farms %}
+        const farmMarker = new google.maps.Marker({
+            position: { 
+                lat: parseFloat({{ farm.latitude }}), 
+                lng: parseFloat({{ farm.longitude }}) 
+            },
+            map: map,
+            title: "{{ farm.farm_name }}"
+        });
+
+        const infoWindow = new google.maps.InfoWindow({
+            content: `
+                <div>
+                    <h6>{{ farm.farm_name }}</h6>
+                    <p>{{ farm.distance }} km away</p>
+                    <a href="{% url 'farmer_profile' farm.id %}" class="btn btn-sm btn-success">View Farm</a>
+                </div>
+            `
+        });
+
+        farmMarker.addListener("click", () => {
+            infoWindow.open(map, farmMarker);
+        });
+
+        markers.push(farmMarker);
+    {% endfor %}
+}
+
+// Get user's location and redirect to nearby farms
+function findNearbyFarms() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                window.location.href = `/nearby-farms/?lat=${lat}&lng=${lng}`;
+            },
+            (error) => {
+                alert("Error getting your location. Please enable location access.");
+            }
+        );
+    } else {
+        alert("Geolocation is not supported by your browser.");
+    }
+}
+
+document.addEventListener('DOMContentLoaded', initMap);
+</script>
+{% endblock %}
+{% endblock %} 

@@ -1,0 +1,292 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">{{ user.username }}'s Profile</h5>
+                    <div class="list-group mt-3">
+                        <a href="#profile" class="list-group-item list-group-item-action active" data-bs-toggle="list">
+                            Profile
+                        </a>
+                        <a href="#requests" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                            My Requests
+                        </a>
+                        <a href="#interests" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                            My Interests
+                        </a>
+                        <a href="#account" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                            Account Settings
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <div class="tab-content">
+                <!-- Profile Section -->
+                <div class="tab-pane fade show active" id="profile">
+                    <div class="card">
+                        <div class="card-body">
+                            <h4 class="card-title mb-4">Profile Information</h4>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="card-text">
+                                        <i class="fas fa-envelope text-success"></i> {{ user.email }}<br>
+                                        <i class="fas fa-phone text-success"></i> {{ user.userprofile.phone }}<br>
+                                        <i class="fas fa-city text-success"></i> {{ user.userprofile.city }}<br>
+                                        <i class="fas fa-map-marker-alt text-success"></i> {{ user.userprofile.address }}
+                                    </p>
+                                    <button class="btn btn-success mb-2" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                                        Edit Profile
+                                    </button>
+                                   
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Requests Section -->
+                <div class="tab-pane fade" id="requests">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h4 class="card-title mb-0">My Requests</h4>
+                                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#generateRequestModal">
+                                    Generate New Request
+                                </button>
+                            </div>
+                            <div class="row">
+                                {% for request in user.productrequest_set.all %}
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5 class="card-title">{{ request.product_name }}</h5>
+                                                <p class="card-text">{{ request.message }}</p>
+                                                <p class="card-text">
+                                                    <small class="text-muted">
+                                                        Date: {{ request.created_at|date:"F d, Y" }}<br>
+                                                        Quantity: {{ request.quantity }} kg<br>
+                                                        District: {{ request.district }}
+                                                    </small>
+                                                </p>
+                                                <form method="post" action="{% url 'delete_interest' request.id %}">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% empty %}
+                                    <div class="col-12">
+                                        <p class="text-center">You haven't generated any requests yet.</p>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interests Section -->
+                <div class="tab-pane fade" id="interests">
+                    <div class="card">
+                        <div class="card-body">
+                            <h4 class="card-title mb-4">My Interests</h4>
+                            <div class="row">
+                                {% for interest in interests %}
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5 class="card-title">{{ interest.product.name }}</h5>
+                                                <p class="card-text">{{ interest.message }}</p>
+                                                <p class="card-text">
+                                                    <small class="text-muted">
+                                                        Farmer: {{ interest.product.farmer.farm_name }}<br>
+                                                        Date: {{ interest.created_at|date:"F d, Y" }}
+                                                    </small>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% empty %}
+                                    <div class="col-12">
+                                        <p class="text-center">You haven't shown interest in any products yet.</p>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account Settings Section -->
+                <div class="tab-pane fade" id="account">
+                    <div class="card">
+                        <div class="card-body">
+                            <h4 class="card-title mb-4">Account Settings</h4>
+                            
+                            <!-- Change Username -->
+                            <div class="mb-4">
+                                <h5>Change Username</h5>
+                                <form method="post" action="{% url 'change_username' %}">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <label class="form-label">New Username</label>
+                                        <input type="text" class="form-control" name="new_username" value="{{ user.username }}">
+                                    </div>
+                                    <button type="submit" class="btn btn-success">Update Username</button>
+                                </form>
+                            </div>
+                            
+                            <hr>
+                            
+                            <!-- Change Password -->
+                            <div class="mt-4">
+                                <h5>Change Password</h5>
+                                <form method="post" action="{% url 'change_password' %}">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <label class="form-label">Current Password</label>
+                                        <input type="password" class="form-control" name="old_password">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">New Password</label>
+                                        <input type="password" class="form-control" name="new_password1">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Confirm New Password</label>
+                                        <input type="password" class="form-control" name="new_password2">
+                                    </div>
+                                    <button type="submit" class="btn btn-success">Change Password</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Generate Request Modal -->
+<div class="modal fade" id="generateRequestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Generate New Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'generate_request' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Product Name</label>
+                                <input type="text" class="form-control" name="product_name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label">Quantity (kg)</label>
+                                <input type="number" class="form-control" name="quantity" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label">District</label>
+                                <input type="text" class="form-control" name="district" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Message</label>
+                        <textarea class="form-control" name="message" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-success">Submit Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'update_user_profile' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" name="email" value="{{ user.email }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Phone</label>
+                        <input type="text" class="form-control" name="phone" value="{{ user.userprofile.phone }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">City</label>
+                        <input type="text" class="form-control" name="city" value="{{ user.userprofile.city }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        <textarea class="form-control" name="address" rows="3">{{ user.userprofile.address }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-success">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Change Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'change_password' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Current Password</label>
+                        <input type="password" class="form-control" name="old_password">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">New Password</label>
+                        <input type="password" class="form-control" name="new_password1">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirm New Password</label>
+                        <input type="password" class="form-control" name="new_password2">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-success">Change Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

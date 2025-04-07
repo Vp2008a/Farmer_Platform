@@ -1,0 +1,356 @@
+.hero-section {
+    padding: 60px 0;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    margin-bottom: 40px;
+}
+
+.card {
+    transition: transform 0.2s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card-img-top {
+    height: 200px;
+    object-fit: cover;
+}
+
+.features-section {
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    padding: 40px 0;
+}
+
+.features-section i {
+    color: #198754;
+}
+
+footer {
+    position: relative;
+    bottom: 0;
+    width: 100%;
+}
+
+.alert {
+    border-radius: 0;
+    margin-bottom: 20px;
+}
+
+/* Form styles */
+.form-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+}
+
+/* Product grid */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+}
+
+/* Add these styles */
+.navbar .input-group {
+    min-width: 300px;
+}
+
+@media (max-width: 992px) {
+    .navbar .input-group {
+        margin: 10px 0;
+        width: 100%;
+    }
+}
+
+.navbar .form-select {
+    border-left: none;
+}
+
+.navbar .btn-light {
+    border-color: #ced4da;
+}
+
+/* Star Rating Styles */
+.star-rating-input {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+}
+
+.star-rating-input input {
+    display: none;
+}
+
+.star-rating-input label {
+    cursor: pointer;
+    padding: 0 0.2rem;
+    color: #ddd;
+    font-size: 1.5em;
+}
+
+.star-rating-input label:hover,
+.star-rating-input label:hover ~ label,
+.star-rating-input input:checked ~ label {
+    color: #ffc107;
+}
+
+.star-rating-input label:hover i:before,
+.star-rating-input label:hover ~ label i:before,
+.star-rating-input input:checked ~ label i:before {
+    content: "\f005";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+}
+
+/* Add these styles */
+.star-rating.small {
+    font-size: 0.8rem;
+}
+
+.card-title .star-rating {
+    display: inline-block;
+}
+
+.card-title .text-muted {
+    font-size: 0.8rem;
+    font-weight: normal;
+}
+
+.farmer-reply {
+    background-color: #f8f9fa;
+    border-left: 3px solid #28a745;
+}
+
+.review-card:last-child {
+    border-bottom: none !important;
+}
+
+.review-card .star-rating {
+    display: inline-block;
+    margin-left: 8px;
+}
+
+/* Add these styles for modal fixes */
+.modal {
+    z-index: 1050;
+}
+
+.modal-backdrop {
+    z-index: 1040;
+}
+
+.edit-product-modal,
+.delete-product-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1050;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    outline: 0;
+}
+
+.modal-dialog-centered {
+    display: flex;
+    align-items: center;
+    min-height: calc(100% - 1rem);
+}
+
+/* Add these styles */
+.location-filter {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.location-filter select {
+    background-color: transparent;
+    border-color: rgba(255,255,255,0.5);
+    color: white;
+}
+
+.location-filter select option {
+    background-color: #198754;
+    color: white;
+}
+
+.location-filter .btn-outline-light:hover {
+    background-color: rgba(255,255,255,0.1);
+}
+
+/* Market Prices Styles */
+.market-prices {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.market-prices table {
+    font-size: 0.9rem;
+}
+
+.market-prices th {
+    background-color: #198754;
+    color: white;
+}
+
+.market-prices td, .market-prices th {
+    vertical-align: middle;
+}
+
+@media (max-width: 768px) {
+    .market-prices {
+        padding: 10px;
+    }
+    
+    .market-prices table {
+        font-size: 0.8rem;
+    }
+}
+
+/* State Filter Styles */
+.state-filter {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.state-filter .form-select,
+.state-filter .form-control {
+    min-width: 180px;
+    margin-right: 10px;
+}
+
+.commodity-search {
+    flex: 1;
+    max-width: 300px;
+}
+
+.commodity-search .form-control {
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .state-filter form {
+        flex-wrap: wrap;
+    }
+    
+    .state-filter .form-select,
+    .state-filter .form-control,
+    .commodity-search {
+        width: 100%;
+        max-width: 100%;
+        margin-bottom: 10px;
+        margin-right: 0;
+    }
+    
+    .state-filter .btn {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+}
+
+@media (max-width: 576px) {
+    .state-filter form {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+    
+    .state-filter .form-select {
+        max-width: 100% !important;
+        margin-bottom: 0.5rem;
+    }
+    
+    .state-filter .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* Pagination Styles */
+.pagination {
+    margin-bottom: 0;
+}
+
+.pagination .page-link {
+    color: #198754;
+    border-color: #198754;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #198754;
+    border-color: #198754;
+    color: white;
+}
+
+.pagination .page-link:hover {
+    background-color: #e9ecef;
+    color: #198754;
+}
+
+@media (max-width: 576px) {
+    .pagination {
+        font-size: 0.9rem;
+    }
+    
+    .pagination .page-link {
+        padding: 0.4rem 0.75rem;
+    }
+}
+
+/* District List Styles */
+.districts-list {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.districts-list .badge {
+    font-size: 0.9rem;
+    padding: 8px 12px;
+}
+
+.districts-list h5 {
+    margin-bottom: 10px;
+    color: #198754;
+}
+
+/* Call Button Styles */
+.btn-outline-success.btn-call {
+    padding: 0.375rem 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-success.btn-call:hover {
+    background-color: #198754;
+    color: white;
+    transform: scale(1.05);
+}
+
+.btn-outline-success.btn-call i {
+    margin-right: 5px;
+}
+
+/* Responsive adjustments for card buttons */
+@media (max-width: 576px) {
+    .card .d-flex {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .card .btn {
+        width: 100%;
+    }
+} 
